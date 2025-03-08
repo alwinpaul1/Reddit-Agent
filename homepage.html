@@ -1,0 +1,1473 @@
+
+    <html>
+        <head>
+            <title>Reddit Agent</title>
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+            <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+            <style>
+                /* Base styles */
+                :root {
+                    --bg-primary: #0f0f0f;
+                    --bg-secondary: #1a1a1a;
+                    --bg-tertiary: #2a2a2a;
+                    --text-primary: #ffffff;
+                    --text-secondary: #a0a0a0;
+                    --accent-primary: #FF4500;
+                    --accent-secondary: #ff581a;
+                    --accent-tertiary: #ff6b33;
+                    --border-color: #333333;
+                }
+                
+                [data-theme="light"] {
+                    --bg-primary: #f9fafb;
+                    --bg-secondary: #ffffff;
+                    --bg-tertiary: #f3f4f6;
+                    --text-primary: #111827;
+                    --text-secondary: #4b5563;
+                    --accent-primary: #FF4500;
+                    --accent-secondary: #ff581a;
+                    --accent-tertiary: #ff6b33;
+                    --border-color: #e5e7eb;
+                }
+
+                /* Theme toggle styles */
+                .theme-toggle {
+                    background: none;
+                    border: none;
+                    cursor: pointer;
+                    height: 40px;
+                    width: 40px;
+                    padding: 5px;
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    color: var(--text-primary);
+                    position: relative;
+                    transition: background-color 0.3s ease;
+                }
+
+                .theme-toggle:hover {
+                    background-color: rgba(128, 128, 128, 0.2);
+                }
+
+                .icon-sun, .icon-moon {
+                    position: absolute;
+                    transition: opacity 0.5s ease, transform 0.5s ease;
+                }
+
+                [data-theme="dark"] .icon-sun {
+                    opacity: 0;
+                    transform: rotate(-90deg) scale(0.5);
+                }
+
+                [data-theme="dark"] .icon-moon {
+                    opacity: 1;
+                    transform: rotate(0) scale(1);
+                }
+
+                [data-theme="light"] .icon-sun {
+                    opacity: 1;
+                    transform: rotate(0) scale(1);
+                }
+
+                [data-theme="light"] .icon-moon {
+                    opacity: 0;
+                    transform: rotate(90deg) scale(0.5);
+                }
+                
+                body {
+                    font-family: 'Inter', sans-serif;
+                    background-color: var(--bg-primary);
+                    color: var(--text-primary);
+                    transition: background-color 0.3s ease, color 0.3s ease;
+                    min-height: 100vh;
+                }
+                
+                .chat-container {
+                    max-width: 1000px;
+                    margin: 0 auto;
+                    height: 100vh;
+                    display: flex;
+                    flex-direction: column;
+                }
+                
+                .message-container {
+                    flex: 1;
+                    overflow-y: auto;
+                    padding: 1rem;
+                    scroll-behavior: smooth;
+                }
+                
+                .message {
+                    margin-bottom: 1.5rem;
+                    animation: fadeIn 0.3s ease;
+                }
+                
+                @keyframes fadeIn {
+                    from { opacity: 0; transform: translateY(10px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+                
+                .user-message {
+                    background-color: var(--bg-secondary);
+                    border-radius: 1rem;
+                    padding: 1rem;
+                }
+                
+                .assistant-message {
+                    background-color: var(--bg-secondary);
+                    border-radius: 1rem;
+                    padding: 1rem;
+                    border: 1px solid var(--border-color);
+                }
+                
+                .input-container {
+                    background-color: var(--bg-secondary);
+                    border-top: 1px solid var(--border-color);
+                    padding: 1rem;
+                    position: sticky;
+                    bottom: 0;
+                }
+                
+                .input-box {
+                    background-color: var(--bg-tertiary);
+                    border: 1px solid var(--border-color);
+                    border-radius: 1rem;
+                    transition: all 0.3s ease;
+                    overflow: hidden;
+                }
+                
+                .input-box:focus-within {
+                    border-color: var(--accent-primary);
+                    box-shadow: 0 0 0 2px rgba(94, 23, 235, 0.2);
+                }
+                
+                textarea {
+                    resize: none;
+                    background-color: transparent;
+                    color: var(--text-primary);
+                    border: none;
+                    outline: none;
+                    padding: 0.75rem 1rem;
+                    max-height: 200px;
+                    width: 100%;
+                }
+                
+                textarea::placeholder {
+                    color: var(--text-secondary);
+                }
+                
+                .send-button {
+                    background-color: var(--accent-primary);
+                    color: white;
+                    border-radius: 0.5rem;
+                    padding: 0.5rem 1rem;
+                    font-weight: 500;
+                    transition: background-color 0.2s ease;
+                }
+                
+                .send-button:hover {
+                    background-color: var(--accent-secondary);
+                }
+                
+                .send-button:disabled {
+                    background-color: var(--bg-tertiary);
+                    color: var(--text-primary);
+                    cursor: not-allowed;
+                }
+                
+                .loading-dots span {
+                    animation: pulse 1.4s infinite;
+                    animation-fill-mode: both;
+                    background-color: var(--accent-primary);
+                }
+                
+                .loading-dots span:nth-child(2) { animation-delay: 0.2s; }
+                .loading-dots span:nth-child(3) { animation-delay: 0.4s; }
+                
+                @keyframes pulse {
+                    0%, 80%, 100% { opacity: 0.4; transform: scale(0.8); }
+                    40% { opacity: 1; transform: scale(1); }
+                }
+                
+                .theme-toggle {
+                    position: fixed;
+                    top: 1rem;
+                    right: 1rem;
+                    padding: 0.5rem;
+                    border-radius: 0.5rem;
+                    background: var(--bg-secondary);
+                    border: 1px solid var(--border-color);
+                    color: var(--text-primary);
+                    cursor: pointer;
+                    transition: all 0.3s ease;
+                    z-index: 10;
+                }
+                
+                .theme-toggle:hover {
+                    background: var(--bg-secondary);
+                }
+                
+                .keyboard-shortcut {
+                    display: inline-flex;
+                    align-items: center;
+                    padding: 0.25rem 0.5rem;
+                    border-radius: 0.25rem;
+                    background: var(--bg-tertiary);
+                    border: 1px solid var(--border-color);
+                    color: var(--text-primary);
+                    font-size: 0.75rem;
+                    margin-left: 0.5rem;
+                }
+                
+                .logo {
+                    font-weight: 700;
+                    font-size: 1.5rem;
+                    color: var(--accent-primary);
+                    display: flex;
+                    align-items: center;
+                    gap: 0.5rem;
+                    cursor: pointer;
+                    transition: opacity 0.2s ease;
+                    user-select: none;
+                    text-decoration: none;
+                }
+                
+                .logo:hover {
+                    opacity: 0.8;
+                }
+                
+                .logo:focus {
+                    outline: none;
+                }
+                
+                .logo:focus-visible {
+                    outline: 2px solid var(--accent-primary);
+                    outline-offset: 2px;
+                    border-radius: 4px;
+                }
+                
+                .logo-icon {
+                    background: linear-gradient(135deg, var(--accent-primary), var(--accent-primary));
+                    width: 2rem;
+                    height: 2rem;
+                    border-radius: 0.5rem;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    color: white;
+                }
+                
+                .welcome-screen {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                    height: 100%;
+                    text-align: center;
+                    padding: 2rem;
+                }
+                
+                .welcome-title {
+                    font-size: 2.5rem;
+                    font-weight: 700;
+                    margin-bottom: 1rem;
+                    background: linear-gradient(135deg, var(--accent-primary), var(--accent-primary));
+                    -webkit-background-clip: text;
+                    background-clip: text;
+                    -webkit-text-fill-color: transparent;
+                }
+                
+                .example-queries {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+                    gap: 1rem;
+                    margin-top: 2rem;
+                    width: 100%;
+                    max-width: 800px;
+                }
+                
+                .example-query {
+                    background-color: var(--bg-secondary);
+                    border: 1px solid var(--border-color);
+                    border-radius: 0.75rem;
+                    padding: 1rem;
+                    cursor: pointer;
+                    transition: all 0.2s ease;
+                }
+                
+                .example-query:hover {
+                    border-color: var(--accent-primary);
+                    transform: translateY(-2px);
+                }
+                
+                .post-card {
+                    padding: 1.25rem;
+                    border-radius: 0.75rem;
+                    background-color: var(--bg-secondary);
+                    border: 1px solid var(--border-color);
+                    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+                    transition: all 0.2s ease;
+                    display: flex;
+                    flex-direction: column;
+                    height: 100%;
+                }
+                
+                .post-card:hover {
+                    border-color: var(--accent-primary);
+                    transform: translateY(-2px);
+                    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+                }
+                
+                .post-title {
+                    font-size: 1.1rem;
+                    font-weight: 600;
+                    margin-bottom: 0.75rem;
+                    line-height: 1.4;
+                }
+                
+                .post-title a {
+                    color: var(--text-primary);
+                    text-decoration: none;
+                    transition: color 0.2s ease;
+                }
+                
+                .post-title a:hover {
+                    color: var(--accent-primary);
+                }
+                
+                .post-content {
+                    color: var(--text-secondary);
+                    font-size: 0.95rem;
+                    line-height: 1.6;
+                    margin-bottom: 1rem;
+                    flex-grow: 1;
+                }
+                
+                .post-meta {
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 0.75rem;
+                    font-size: 0.8rem;
+                    padding-top: 0.75rem;
+                    border-top: 1px solid var(--border-color);
+                    margin-top: auto;
+                }
+                
+                .post-meta span {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 0.25rem;
+                    color: var(--text-secondary);
+                }
+                
+                .post-meta .subreddit {
+                    color: var(--accent-primary);
+                    font-weight: 500;
+                }
+                
+                .post-meta svg {
+                    width: 14px;
+                    height: 14px;
+                    opacity: 0.8;
+                }
+                
+                .read-more {
+                    color: var(--accent-primary);
+                    font-size: 0.9rem;
+                    font-weight: 500;
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 0.25rem;
+                    margin-top: 0.75rem;
+                    cursor: pointer;
+                    transition: all 0.2s ease;
+                }
+                
+                .read-more:hover {
+                    color: var(--accent-secondary);
+                }
+                
+                .read-more svg {
+                    width: 16px;
+                    height: 16px;
+                    transition: transform 0.2s ease;
+                }
+                
+                .read-more:hover svg {
+                    transform: translateX(2px);
+                }
+                
+                .posts-grid {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+                    gap: 1.25rem;
+                    margin-top: 1rem;
+                }
+                
+                @media (max-width: 640px) {
+                    .posts-grid {
+                        grid-template-columns: 1fr;
+                    }
+                }
+                
+                .related-posts-container {
+                    margin-top: 2rem;
+                    padding-top: 1.5rem;
+                    border-top: 1px solid var(--border-color);
+                }
+                
+                .related-posts-title {
+                    display: flex;
+                    align-items: center;
+                    gap: 0.5rem;
+                    font-size: 1.25rem;
+                    font-weight: 600;
+                    color: var(--text-primary);
+                    margin-bottom: 1rem;
+                }
+                
+                .related-posts-title svg {
+                    width: 1.5rem;
+                    height: 1.5rem;
+                    color: var(--accent-primary);
+                }
+                
+                .subreddit-select {
+                    background-color: var(--bg-tertiary);
+                    color: var(--text-primary);
+                    border: 1px solid var(--border-color);
+                    border-radius: 0.5rem;
+                    padding: 0.5rem;
+                    font-size: 0.875rem;
+                }
+                
+                .model-select {
+                    background-color: var(--bg-tertiary);
+                    color: var(--text-primary);
+                    border: 1px solid var(--border-color);
+                    border-radius: 0.5rem;
+                    padding: 0.5rem;
+                    font-size: 0.875rem;
+                }
+                
+                .settings-button {
+                    background-color: var(--bg-tertiary);
+                    color: var(--text-primary);
+                    border: 1px solid var(--border-color);
+                    border-radius: 0.5rem;
+                    padding: 0.5rem;
+                    transition: all 0.2s ease;
+                }
+                
+                .settings-button:hover {
+                    color: var(--accent-primary);
+                    border-color: var(--accent-primary);
+                }
+                
+                .settings-panel {
+                    position: absolute;
+                    bottom: 80px;
+                    right: 1rem;
+                    background-color: var(--bg-secondary);
+                    border: 1px solid var(--border-color);
+                    border-radius: 0.75rem;
+                    padding: 1rem;
+                    width: 300px;
+                    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+                    z-index: 10;
+                    display: none;
+                }
+                
+                .settings-panel.active {
+                    display: block;
+                    animation: fadeIn 0.2s ease;
+                }
+                
+                .settings-title {
+                    font-weight: 600;
+                    margin-bottom: 1rem;
+                    padding-bottom: 0.5rem;
+                    border-bottom: 1px solid var(--border-color);
+                }
+                
+                .settings-option {
+                    margin-bottom: 1rem;
+                }
+                
+                .settings-label {
+                    display: block;
+                    margin-bottom: 0.5rem;
+                    font-size: 0.875rem;
+                    color: var(--text-primary);
+                }
+                
+                .share-button {
+                    display: inline-flex;
+                    align-items: center;
+                    padding: 4px 10px;
+                    background-color: var(--accent-primary, #6366f1);
+                    color: white;
+                    border: none;
+                    border-radius: 4px;
+                    cursor: pointer;
+                    font-size: 0.85rem;
+                    margin-top: 8px;
+                    transition: background-color 0.2s;
+                }
+                
+                .share-button:hover {
+                    background-color: var(--accent-secondary, #4f46e5);
+                }
+                
+                .share-button svg {
+                    width: 16px;
+                    height: 16px;
+                    margin-right: 6px;
+                }
+                
+                .share-options {
+                    position: absolute;
+                    background-color: var(--bg-secondary);
+                    border: 1px solid var(--border-color, #2d2d3d);
+                    border-radius: 4px;
+                    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+                    padding: 8px 0;
+                    z-index: 100;
+                    display: none;
+                }
+                
+                .share-options.visible {
+                    display: block;
+                }
+                
+                .share-option {
+                    padding: 6px 12px;
+                    cursor: pointer;
+                    display: flex;
+                    align-items: center;
+                    color: var(--text-primary, #e2e8f0);
+                }
+                
+                .share-option:hover {
+                    background-color: var(--bg-secondary);
+                }
+                
+                .share-option svg {
+                    width: 16px;
+                    height: 16px;
+                    margin-right: 8px;
+                }
+                
+                .toast {
+                    position: fixed;
+                    bottom: 20px;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    background-color: var(--accent-primary, #6366f1);
+                    color: white;
+                    padding: 8px 16px;
+                    border-radius: 4px;
+                    font-size: 0.9rem;
+                    z-index: 1000;
+                    opacity: 0;
+                    transition: opacity 0.3s;
+                }
+                
+                .toast.visible {
+                    opacity: 1;
+                }
+            </style>
+        </head>
+        <body>
+            <!-- Theme toggle button -->
+            <button class="theme-toggle" id="themeToggle">
+                <svg class="icon-sun h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="5"></circle>
+                    <line x1="12" y1="1" x2="12" y2="3"></line>
+                    <line x1="12" y1="21" x2="12" y2="23"></line>
+                    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                    <line x1="1" y1="12" x2="3" y2="12"></line>
+                    <line x1="21" y1="12" x2="23" y2="12"></line>
+                    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                </svg>
+                <svg class="icon-moon h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+                </svg>
+            </button>
+
+            <div class="chat-container">
+                <header class="p-4 border-b border-solid" style="border-color: var(--border-color);">
+                    <div class="logo" role="button" tabindex="0" onclick="location.href = location.href" onkeypress="if(event.key === 'Enter') location.href = location.href">
+                        <div class="logo-icon">R</div>
+                        <span>Reddit Agent</span>
+                    </div>
+                </header>
+                
+                <div id="messageContainer" class="message-container">
+                    <div id="welcomeScreen" class="welcome-screen">
+                        <h1 class="welcome-title">Reddit Agent</h1>
+                        <p class="text-lg text-gray-400 mb-6">Ask anything about Reddit content</p>
+                        
+                        <div class="example-queries">
+                            <div class="example-query" data-query="What are the top discussions about artificial intelligence on Reddit this week?">
+                                <p class="text-sm font-medium mb-1">Top AI discussions</p>
+                                <p class="text-xs text-gray-400">What are the top discussions about artificial intelligence on Reddit this week?</p>
+                            </div>
+                            <div class="example-query" data-query="Summarize the debate around the latest gaming controversy in r/gaming">
+                                <p class="text-sm font-medium mb-1">Gaming controversy</p>
+                                <p class="text-xs text-gray-400">Summarize the debate around the latest gaming controversy in r/gaming</p>
+                            </div>
+                            <div class="example-query" data-query="What are the most recommended productivity apps according to r/productivity?">
+                                <p class="text-sm font-medium mb-1">Productivity apps</p>
+                                <p class="text-xs text-gray-400">What are the most recommended productivity apps according to r/productivity?</p>
+                                </div>
+                            <div class="example-query" data-query="Find the most upvoted recipes in r/cooking from the past month">
+                                <p class="text-sm font-medium mb-1">Popular recipes</p>
+                                <p class="text-xs text-gray-400">Find the most upvoted recipes in r/cooking from the past month</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="input-container">
+                    <div class="settings-panel" id="settingsPanel">
+                        <h3 class="settings-title">Settings</h3>
+                        <div class="settings-option">
+                            <label class="settings-label" for="modelSelect">Model</label>
+                            <select id="modelSelect" class="model-select w-full">
+                                <option value="llama2">Llama 2</option>
+                                <option value="llama3">Llama 3</option>
+                                <option value="deepseek-r1:8b">DeepSeek R1 8B</option>
+                            </select>
+                        </div>
+                        <div class="settings-option">
+                            <label class="settings-label" for="subredditInput">Default Subreddit (optional)</label>
+                                    <input 
+                                        type="text" 
+                                id="subredditInput" 
+                                class="subreddit-select w-full"
+                                placeholder="e.g. AskReddit"
+                            >
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center space-x-2 mb-4">
+                        <button id="settingsButton" class="settings-button">
+                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            </svg>
+                        </button>
+                    </div>
+                    
+                    <form id="searchForm" class="space-y-4">
+                        <div class="input-box">
+                            <textarea 
+                                id="query" 
+                                rows="1"
+                                class="w-full"
+                                placeholder="Ask anything about Reddit content..."
+                            ></textarea>
+                                </div>
+                        
+                        <div class="flex justify-between items-center">
+                            <div class="text-sm text-gray-500" id="charCount">0 characters</div>
+                            <div class="flex items-center">
+                                <button 
+                                    type="submit" 
+                                    id="sendButton"
+                                    class="send-button flex items-center"
+                                    disabled
+                                >
+                                    <span>Send</span>
+                                    <svg class="ml-1 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+                                    </svg>
+                                </button>
+                                <span class="keyboard-shortcut">⌘ + ↵</span>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <script>
+                // Theme toggle functionality
+                const themeToggle = document.getElementById('themeToggle');
+                const prefersDark = window.matchMedia('(prefers-color-scheme: dark)');
+                
+                function setTheme(isDark) {
+                    document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+                    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+                    // Theme-specific styles are handled via CSS now
+                }
+                
+                // Initialize theme (default to dark for Grok-like experience)
+                const savedTheme = localStorage.getItem('theme');
+                if (savedTheme) {
+                    setTheme(savedTheme === 'dark');
+                } else {
+                    setTheme(true); // Default to dark theme
+                }
+                
+                themeToggle.addEventListener('click', () => {
+                    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+                    setTheme(!isDark);
+                });
+                
+                // Settings panel toggle
+                const settingsButton = document.getElementById('settingsButton');
+                const settingsPanel = document.getElementById('settingsPanel');
+                
+                settingsButton.addEventListener('click', () => {
+                    settingsPanel.classList.toggle('active');
+                });
+                
+                // Close settings panel when clicking outside
+                document.addEventListener('click', (e) => {
+                    if (!settingsPanel.contains(e.target) && !settingsButton.contains(e.target)) {
+                        settingsPanel.classList.remove('active');
+                    }
+                });
+                
+                // Keyboard shortcuts
+                document.addEventListener('keydown', (e) => {
+                    if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+                        e.preventDefault();
+                        document.querySelector('#searchForm button[type="submit"]').click();
+                    }
+                });
+                
+                // Character count and textarea auto-resize
+                const queryTextarea = document.getElementById('query');
+                const charCount = document.getElementById('charCount');
+                const sendButton = document.getElementById('sendButton');
+                
+                function updateTextarea() {
+                    // Reset height to auto to get the correct scrollHeight
+                    queryTextarea.style.height = 'auto';
+                    
+                    // Set the height to the scrollHeight
+                    queryTextarea.style.height = (queryTextarea.scrollHeight) + 'px';
+                    
+                    // Update character count
+                    const count = queryTextarea.value.length;
+                    charCount.textContent = `${count} character${count !== 1 ? 's' : ''}`;
+                    
+                    // Enable/disable send button
+                    sendButton.disabled = count === 0;
+                }
+                
+                queryTextarea.addEventListener('input', updateTextarea);
+                
+                // Example query click handlers
+                document.querySelectorAll('.example-query').forEach(example => {
+                    example.addEventListener('click', () => {
+                        const query = example.getAttribute('data-query');
+                        queryTextarea.value = query;
+                        updateTextarea();
+                        document.getElementById('welcomeScreen').style.display = 'none';
+                        queryTextarea.focus();
+                    });
+                });
+                
+                // Handle form submission
+                document.getElementById('searchForm').addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    
+                    const query = document.getElementById('query').value.trim();
+                    if (!query) return;
+                    
+                    const subreddit = document.getElementById('subredditInput').value.trim();
+                    const model = document.getElementById('modelSelect').value;
+                    const messageContainer = document.getElementById('messageContainer');
+                    
+                    // Hide welcome screen if visible
+                    document.getElementById('welcomeScreen').style.display = 'none';
+                    
+                    // Add user message
+                    const userMessageDiv = document.createElement('div');
+                    userMessageDiv.className = 'message user-message';
+                    userMessageDiv.innerHTML = `
+                        <div class="flex items-start">
+                            <div class="flex-shrink-0 mr-3">
+                                <div class="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold">
+                                    U
+                                </div>
+                            </div>
+                            <div class="flex-1">
+                                <div class="flex justify-between items-start">
+                                    <p class="whitespace-pre-wrap message-text">${query}</p>
+                                    <button class="edit-button ml-2 text-gray-400 hover:text-gray-600 transition-colors" onclick="editMessage(this)">
+                                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    messageContainer.appendChild(userMessageDiv);
+                    
+                    // Add assistant message with loading indicator
+                    const assistantMessageDiv = document.createElement('div');
+                    assistantMessageDiv.className = 'message assistant-message';
+                    assistantMessageDiv.innerHTML = `
+                        <div class="flex items-start">
+                            <div class="flex-shrink-0 mr-3">
+                                <div class="w-8 h-8 rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 flex items-center justify-center text-white font-bold">
+                                    R
+                                </div>
+                            </div>
+                            <div class="flex-1">
+                                <div id="loadingIndicator" class="loading-dots flex space-x-2">
+                                    <span class="h-3 w-3 rounded-full"></span>
+                                    <span class="h-3 w-3 rounded-full"></span>
+                                    <span class="h-3 w-3 rounded-full"></span>
+                                </div>
+                                <div id="responseContent" class="whitespace-pre-wrap mt-2 hidden"></div>
+                            </div>
+                        </div>
+                    `;
+                    messageContainer.appendChild(assistantMessageDiv);
+                    
+                    // Scroll to bottom
+                    messageContainer.scrollTop = messageContainer.scrollHeight;
+                    
+                    // Clear input
+                    queryTextarea.value = '';
+                    updateTextarea();
+                    
+                    try {
+                        const response = await fetch('/search', {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({query, subreddit, model})
+                        });
+                        
+                        if (!response.ok) {
+                            throw new Error('Search failed. Please try again.');
+                        }
+                        
+                        const result = await response.json();
+                        
+                        // Hide loading indicator
+                        const loadingIndicator = assistantMessageDiv.querySelector('#loadingIndicator');
+                        loadingIndicator.classList.add('hidden');
+                        
+                        // Show response content
+                        const responseContent = assistantMessageDiv.querySelector('#responseContent');
+                        responseContent.classList.remove('hidden');
+                        
+                        // Format and display the summary
+                        const summaryDiv = document.createElement('div');
+                        summaryDiv.className = 'summary-container';
+                        summaryDiv.innerHTML = boldifyText(result.summary);
+                        responseContent.appendChild(summaryDiv);
+                        
+                        // Add share button to the assistant message
+                        createShareButton(assistantMessageDiv);
+                        
+                        // Add related posts if available
+                        if (result.posts && result.posts.length > 0) {
+                            const postsContainer = document.createElement('div');
+                            postsContainer.className = 'related-posts-container';
+                            
+                            const postsTitle = document.createElement('h3');
+                            postsTitle.className = 'related-posts-title';
+                            postsTitle.innerHTML = `
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="12" cy="5" r="3"></circle>
+                                    <line x1="12" y1="8" x2="12" y2="21"></line>
+                                    <line x1="4.22" y1="10.22" x2="5.64" y2="11.64"></line>
+                                    <line x1="18.36" y1="11.64" x2="19.78" y2="10.22"></line>
+                                    <line x1="8.59" y1="18.59" x2="10" y2="20"></line>
+                                    <line x1="14" y1="20" x2="15.41" y2="18.59"></line>
+                                </svg>
+                                Top Related Discussions
+                            `;
+                            postsContainer.appendChild(postsTitle);
+                            
+                            // Create grid for posts
+                            const postsGrid = document.createElement('div');
+                            postsGrid.className = 'posts-grid';
+                            
+                            result.posts.forEach(post => {
+                                const postCard = document.createElement('div');
+                                postCard.className = 'post-card';
+                                
+                                // Safely handle post title
+                                const title = post.title || 'Untitled Post';
+                                const safeTitle = document.createElement('div');
+                                safeTitle.innerHTML = boldifyText(title);
+                                
+                                // Safely handle post content
+                                let content = 'No content available';
+                                let fullContent = '';
+                                if (post.content) {
+                                    fullContent = post.content;
+                                    // Limit content length and add ellipsis
+                                    content = post.content.length > 150 ? 
+                                        post.content.substring(0, 150) + '...' : 
+                                        post.content;
+                                }
+                                const safeContent = document.createElement('div');
+                                safeContent.innerHTML = boldifyText(content);
+                                
+                                // Format the date if available
+                                let dateStr = '';
+                                if (post.created_at) {
+                                    try {
+                                        const date = new Date(post.created_at * 1000);
+                                        dateStr = date.toLocaleDateString();
+                                    } catch (e) {
+                                        dateStr = '';
+                                    }
+                                }
+                                
+                                // Build the post card HTML
+                                postCard.innerHTML = `
+                                    <h4 class="post-title">
+                                        <a href="${post.url || '#'}" target="_blank">
+                                            ${safeTitle.innerHTML}
+                                        </a>
+                                    </h4>
+                                    <p class="post-content">${safeContent.innerHTML}</p>
+                                `;
+                                
+                                // Add read more if content was truncated
+                                if (fullContent && fullContent.length > 150) {
+                                    const readMoreBtn = document.createElement('div');
+                                    readMoreBtn.className = 'read-more';
+                                    readMoreBtn.innerHTML = `
+                                        Read more
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <polyline points="9 18 15 12 9 6"></polyline>
+                                        </svg>
+                                    `;
+                                    
+                                    // Add toggle functionality
+                                    readMoreBtn.addEventListener('click', (e) => {
+                                        e.preventDefault();
+                                        const contentEl = postCard.querySelector('.post-content');
+                                        const isExpanded = contentEl.getAttribute('data-expanded') === 'true';
+                                        
+                                        if (isExpanded) {
+                                            contentEl.innerHTML = boldifyText(content);
+                                            contentEl.setAttribute('data-expanded', 'false');
+                                            readMoreBtn.innerHTML = `
+                                                Read more
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                    <polyline points="9 18 15 12 9 6"></polyline>
+                                                </svg>
+                                            `;
+                                        } else {
+                                            contentEl.innerHTML = boldifyText(fullContent);
+                                            contentEl.setAttribute('data-expanded', 'true');
+                                            readMoreBtn.innerHTML = `
+                                                Show less
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                    <polyline points="15 18 9 12 15 6"></polyline>
+                                                </svg>
+                                            `;
+                                        }
+                                    });
+                                    
+                                    postCard.appendChild(readMoreBtn);
+                                }
+                                
+                                // Add post metadata with icons
+                                const metaDiv = document.createElement('div');
+                                metaDiv.className = 'post-meta';
+                                
+                                metaDiv.innerHTML = `
+                                    <span class="subreddit">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M17.9 17.39A10.95 10.95 0 0 1 12 20c-5.52 0-10-4.48-10-10S6.48 0 12 0s10 4.48 10 10c0 2.96-1.29 5.62-3.34 7.45"></path>
+                                            <path d="M17.9 17.39A10.95 10.95 0 0 1 12 20c-5.52 0-10-4.48-10-10S6.48 0 12 0s10 4.48 10 10c0 2.96-1.29 5.62-3.34 7.45"></path>
+                                            <path d="M12 10a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"></path>
+                                            <path d="M8 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"></path>
+                                            <path d="M16 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"></path>
+                                        </svg>
+                                        r/${post.subreddit || 'unknown'}
+                                    </span>
+                                    <span class="author">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                            <circle cx="12" cy="7" r="4"></circle>
+                                        </svg>
+                                        u/${post.author || 'anonymous'}
+                                    </span>
+                                    <span class="score">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M12 2l9 4v6c0 5.55-3.84 10.74-9 12-5.16-1.26-9-6.45-9-12V6l9-4z"></path>
+                                        </svg>
+                                        ${post.score || 0} points
+                                    </span>
+                                    ${dateStr ? `
+                                    <span class="date">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                                            <line x1="16" y1="2" x2="16" y2="6"></line>
+                                            <line x1="8" y1="2" x2="8" y2="6"></line>
+                                            <line x1="3" y1="10" x2="21" y2="10"></line>
+                                        </svg>
+                                        ${dateStr}
+                                    </span>
+                                    ` : ''}
+                                `;
+                                
+                                postCard.appendChild(metaDiv);
+                                postsGrid.appendChild(postCard);
+                            });
+                            
+                            postsContainer.appendChild(postsGrid);
+                            responseContent.appendChild(postsContainer);
+                        }
+                        
+                        // Scroll to bottom again after content is added
+                        messageContainer.scrollTop = messageContainer.scrollHeight;
+                        
+                    } catch (error) {
+                        // Hide loading indicator
+                        const loadingIndicator = assistantMessageDiv.querySelector('#loadingIndicator');
+                        loadingIndicator.classList.add('hidden');
+                        
+                        // Show error message
+                        const responseContent = assistantMessageDiv.querySelector('#responseContent');
+                        responseContent.classList.remove('hidden');
+                        responseContent.innerHTML = `
+                            <div class="text-red-500">
+                                <svg class="inline-block h-5 w-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                                </svg>
+                                ${error.message}
+                            </div>
+                        `;
+                        
+                        // Scroll to bottom
+                        messageContainer.scrollTop = messageContainer.scrollHeight;
+                    }
+                });
+
+                function boldifyText(text) {
+                    if (!text) return '';
+                    
+                    // First process bullet points (lines starting with '* ')
+                    text = text.replace(/^\* (.+)$/gm, '<li>$1</li>');
+                    
+                    // Wrap consecutive list items in ul tags
+                    text = text.replace(/(<li>.+<\/li>\n?)+/g, '<ul class="list-disc pl-5 my-2">$&</ul>');
+                    
+                    // Then process bold text
+                    return text.replace(/\*\*(.*?)\*\*/g, (match, p1) => `<strong class="font-bold">${p1}</strong>`);
+                }
+
+                // Focus textarea on page load
+                window.addEventListener('load', () => {
+                    queryTextarea.focus();
+                });
+
+                // Function to create share button
+                function createShareButton(messageDiv) {
+                    // Find the correct container within the message div
+                    const messageContent = messageDiv.querySelector('.flex-1');
+                    if (!messageContent) return;
+                    
+                    // Check if share button already exists
+                    if (messageContent.querySelector('.share-button')) return;
+                    
+                    const shareButton = document.createElement('button');
+                    shareButton.className = 'share-button mt-2';
+                    shareButton.innerHTML = `
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path>
+                            <polyline points="16 6 12 2 8 6"></polyline>
+                            <line x1="12" y1="2" x2="12" y2="15"></line>
+                        </svg>
+                        Share
+                    `;
+                    
+                    // Create share options container
+                    const shareOptions = document.createElement('div');
+                    shareOptions.className = 'share-options';
+                    shareOptions.innerHTML = `
+                        <div class="share-option" data-action="copy">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                            </svg>
+                            Copy to clipboard
+                        </div>
+                        <div class="share-option" data-action="twitter">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M23 3a10.9 10.9 0 0 1-3.14 1.53 4.48 4.48 0 0 0-7.86 3v1A10.66 10.66 0 0 1 3 4s-4 9 5 13a11.64 11.64 0 0 1-7 2c9 5 20 0 20-11.5a4.5 4.5 0 0 0-.08-.83A7.72 7.72 0 0 0 23 3z"></path>
+                            </svg>
+                            Share on Twitter
+                        </div>
+                    `;
+                    
+                    // Add share button to message
+                    messageContent.appendChild(shareButton);
+                    document.body.appendChild(shareOptions);
+                    
+                    // Position share options on button click
+                    shareButton.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        
+                        const rect = shareButton.getBoundingClientRect();
+                        shareOptions.style.top = `${rect.bottom + window.scrollY + 5}px`;
+                        shareOptions.style.left = `${rect.left + window.scrollX}px`;
+                        
+                        shareOptions.classList.toggle('visible');
+                    });
+                    
+                    // Handle share options
+                    shareOptions.querySelectorAll('.share-option').forEach(option => {
+                        option.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            
+                            const action = option.getAttribute('data-action');
+                            // Get the text content from the response content
+                            const responseContent = messageContent.querySelector('#responseContent');
+                            let content = '';
+                            
+                            if (responseContent) {
+                                content = responseContent.textContent.trim();
+                            } else {
+                                // Fallback to get all text content from the message
+                                const paragraphs = messageContent.querySelectorAll('p');
+                                content = Array.from(paragraphs)
+                                    .map(p => p.textContent.trim())
+                                    .join('\n\n');
+                                
+                                if (!content) {
+                                    content = messageContent.textContent.trim();
+                                }
+                            }
+                            
+                            if (action === 'copy') {
+                                navigator.clipboard.writeText(content)
+                                    .then(() => showToast('Copied to clipboard!'))
+                                    .catch(err => showToast('Failed to copy: ' + err));
+                            } else if (action === 'twitter') {
+                                const tweetText = encodeURIComponent(content.substring(0, 280));
+                                window.open(`https://twitter.com/intent/tweet?text=${tweetText}`, '_blank');
+                            }
+                            
+                            shareOptions.classList.remove('visible');
+                        });
+                    });
+                    
+                    // Close share options when clicking elsewhere
+                    document.addEventListener('click', () => {
+                        shareOptions.classList.remove('visible');
+                    });
+                }
+                
+                // Function to show toast notification
+                function showToast(message, duration = 3000) {
+                    let toast = document.querySelector('.toast');
+                    
+                    if (!toast) {
+                        toast = document.createElement('div');
+                        toast.className = 'toast';
+                        document.body.appendChild(toast);
+                    }
+                    
+                    toast.textContent = message;
+                    toast.classList.add('visible');
+                    
+                    setTimeout(() => {
+                        toast.classList.remove('visible');
+                    }, duration);
+                }
+
+                // Add edit message functionality
+                function editMessage(button) {
+                    const messageDiv = button.closest('.user-message');
+                    const messageText = messageDiv.querySelector('.message-text');
+                    const currentText = messageText.textContent;
+                    
+                    // Create textarea
+                    const textarea = document.createElement('textarea');
+                    textarea.value = currentText;
+                    textarea.className = 'w-full bg-transparent text-current border border-accent-primary rounded p-2 whitespace-pre-wrap';
+                    textarea.style.minHeight = '120px'; // Increased from 60px
+                    textarea.style.fontSize = window.getComputedStyle(messageText).fontSize;
+                    textarea.style.lineHeight = window.getComputedStyle(messageText).lineHeight;
+                    
+                    // Make the textarea adjust to content height
+                    const adjustHeight = () => {
+                        textarea.style.height = 'auto';
+                        textarea.style.height = (textarea.scrollHeight) + 'px';
+                    };
+                    
+                    // Create save button
+                    const saveButton = document.createElement('button');
+                    saveButton.className = 'send-button ml-2 px-4 py-1';
+                    saveButton.textContent = 'Save';
+                    
+                    // Create buttons container
+                    const buttonsContainer = document.createElement('div');
+                    buttonsContainer.className = 'flex justify-start mt-2 space-x-2';
+                    
+                    // Create cancel button
+                    const cancelButton = document.createElement('button');
+                    cancelButton.className = 'px-4 py-1 rounded bg-gray-600 text-white hover:bg-gray-500 transition-colors';
+                    cancelButton.textContent = 'Cancel';
+                    
+                    // Add buttons to container
+                    buttonsContainer.appendChild(saveButton);
+                    buttonsContainer.appendChild(cancelButton);
+                    
+                    // Replace message with edit interface
+                    const container = document.createElement('div');
+                    container.className = 'w-full'; // Ensure container is full width
+                    container.appendChild(textarea);
+                    container.appendChild(buttonsContainer);
+                    messageText.replaceWith(container);
+                    button.style.display = 'none';
+                    
+                    // Focus textarea and adjust height
+                    textarea.focus();
+                    adjustHeight();
+                    textarea.addEventListener('input', adjustHeight);
+                    
+                    // Handle cancel
+                    cancelButton.onclick = () => {
+                        container.replaceWith(messageText);
+                        button.style.display = '';
+                    };
+                    
+                    // Handle save
+                    saveButton.onclick = async () => {
+                        const newText = textarea.value.trim();
+                        if (!newText) return;
+                        
+                        // Update the message text
+                        messageText.textContent = newText;
+                        container.replaceWith(messageText);
+                        button.style.display = '';
+                        
+                        // Look for the corresponding assistant message
+                        const assistantMessage = messageDiv.nextElementSibling;
+                        if (assistantMessage && assistantMessage.classList.contains('assistant-message')) {
+                            // Show loading indicator in the assistant message
+                            const responseContent = assistantMessage.querySelector('#responseContent');
+                            const loadingIndicator = assistantMessage.querySelector('#loadingIndicator');
+                            
+                            if (responseContent && loadingIndicator) {
+                                responseContent.classList.add('hidden');
+                                loadingIndicator.classList.remove('hidden');
+                                
+                                try {
+                                    const subreddit = document.getElementById('subredditInput').value.trim();
+                                    const model = document.getElementById('modelSelect').value;
+                                    
+                                    const response = await fetch('/search', {
+                                        method: 'POST',
+                                        headers: {'Content-Type': 'application/json'},
+                                        body: JSON.stringify({query: newText, subreddit, model})
+                                    });
+                                    
+                                    if (!response.ok) {
+                                        throw new Error('Search failed. Please try again.');
+                                    }
+                                    
+                                    const result = await response.json();
+                                    
+                                    // Hide loading indicator
+                                    loadingIndicator.classList.add('hidden');
+                                    
+                                    // Show response content
+                                    responseContent.classList.remove('hidden');
+                                    
+                                    // Format and display the summary
+                                    const summaryDiv = document.createElement('div');
+                                    summaryDiv.className = 'summary-container';
+                                    summaryDiv.innerHTML = boldifyText(result.summary);
+                                    responseContent.appendChild(summaryDiv);
+                                    
+                                    // Add related posts if available
+                                    if (result.posts && result.posts.length > 0) {
+                                        // Remove any existing posts container
+                                        const existingPostsContainer = responseContent.querySelector('.mt-4.space-y-4');
+                                        if (existingPostsContainer) {
+                                            existingPostsContainer.remove();
+                                        }
+                                        
+                                        const postsContainer = document.createElement('div');
+                                        postsContainer.className = 'related-posts-container';
+                                        
+                                        const postsTitle = document.createElement('h3');
+                                        postsTitle.className = 'related-posts-title';
+                                        postsTitle.innerHTML = `
+                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <circle cx="12" cy="5" r="3"></circle>
+                                                <line x1="12" y1="8" x2="12" y2="21"></line>
+                                                <line x1="4.22" y1="10.22" x2="5.64" y2="11.64"></line>
+                                                <line x1="18.36" y1="11.64" x2="19.78" y2="10.22"></line>
+                                                <line x1="8.59" y1="18.59" x2="10" y2="20"></line>
+                                                <line x1="14" y1="20" x2="15.41" y2="18.59"></line>
+                                            </svg>
+                                            Top Related Discussions
+                                        `;
+                                        postsContainer.appendChild(postsTitle);
+                                        
+                                        // Create grid for posts
+                                        const postsGrid = document.createElement('div');
+                                        postsGrid.className = 'posts-grid';
+                                        
+                                        result.posts.forEach(post => {
+                                            const postCard = document.createElement('div');
+                                            postCard.className = 'post-card';
+                                            
+                                            // Safely handle post title
+                                            const title = post.title || 'Untitled Post';
+                                            const safeTitle = document.createElement('div');
+                                            safeTitle.innerHTML = boldifyText(title);
+                                            
+                                            // Safely handle post content
+                                            let content = 'No content available';
+                                            let fullContent = '';
+                                            if (post.content) {
+                                                fullContent = post.content;
+                                                // Limit content length and add ellipsis
+                                                content = post.content.length > 150 ? 
+                                                    post.content.substring(0, 150) + '...' : 
+                                                    post.content;
+                                            }
+                                            const safeContent = document.createElement('div');
+                                            safeContent.innerHTML = boldifyText(content);
+                                            
+                                            // Build the post card HTML
+                                            postCard.innerHTML = `
+                                                <h4 class="post-title">
+                                                    <a href="${post.url || '#'}" target="_blank">
+                                                        ${safeTitle.innerHTML}
+                                                    </a>
+                                                </h4>
+                                                <p class="post-content">${safeContent.innerHTML}</p>
+                                            `;
+                                            
+                                            // Add read more if content was truncated
+                                            if (fullContent && fullContent.length > 150) {
+                                                const readMoreBtn = document.createElement('div');
+                                                readMoreBtn.className = 'read-more';
+                                                readMoreBtn.innerHTML = `
+                                                    Read more
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                        <polyline points="9 18 15 12 9 6"></polyline>
+                                                    </svg>
+                                                `;
+                                                
+                                                // Add toggle functionality
+                                                readMoreBtn.addEventListener('click', (e) => {
+                                                    e.preventDefault();
+                                                    const contentEl = postCard.querySelector('.post-content');
+                                                    const isExpanded = contentEl.getAttribute('data-expanded') === 'true';
+                                                    
+                                                    if (isExpanded) {
+                                                        contentEl.innerHTML = boldifyText(content);
+                                                        contentEl.setAttribute('data-expanded', 'false');
+                                                        readMoreBtn.innerHTML = `
+                                                            Read more
+                                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                                <polyline points="9 18 15 12 9 6"></polyline>
+                                                            </svg>
+                                                        `;
+                                                    } else {
+                                                        contentEl.innerHTML = boldifyText(fullContent);
+                                                        contentEl.setAttribute('data-expanded', 'true');
+                                                        readMoreBtn.innerHTML = `
+                                                            Show less
+                                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                                <polyline points="15 18 9 12 15 6"></polyline>
+                                                            </svg>
+                                                        `;
+                                                    }
+                                                });
+                                                
+                                                postCard.appendChild(readMoreBtn);
+                                            }
+                                            
+                                            // Add post metadata with icons
+                                            const metaDiv = document.createElement('div');
+                                            metaDiv.className = 'post-meta';
+                                            
+                                            metaDiv.innerHTML = `
+                                                <span class="subreddit">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                        <path d="M17.9 17.39A10.95 10.95 0 0 1 12 20c-5.52 0-10-4.48-10-10S6.48 0 12 0s10 4.48 10 10c0 2.96-1.29 5.62-3.34 7.45"></path>
+                                                        <path d="M17.9 17.39A10.95 10.95 0 0 1 12 20c-5.52 0-10-4.48-10-10S6.48 0 12 0s10 4.48 10 10c0 2.96-1.29 5.62-3.34 7.45"></path>
+                                                        <path d="M12 10a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"></path>
+                                                        <path d="M8 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"></path>
+                                                        <path d="M16 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"></path>
+                                                    </svg>
+                                                    r/${post.subreddit || 'unknown'}
+                                                </span>
+                                                <span class="author">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                                        <circle cx="12" cy="7" r="4"></circle>
+                                                    </svg>
+                                                    u/${post.author || 'anonymous'}
+                                                </span>
+                                                <span class="score">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                        <path d="M12 2l9 4v6c0 5.55-3.84 10.74-9 12-5.16-1.26-9-6.45-9-12V6l9-4z"></path>
+                                                    </svg>
+                                                    ${post.score || 0} points
+                                                </span>
+                                                ${dateStr ? `
+                                                <span class="date">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                                                        <line x1="16" y1="2" x2="16" y2="6"></line>
+                                                        <line x1="8" y1="2" x2="8" y2="6"></line>
+                                                        <line x1="3" y1="10" x2="21" y2="10"></line>
+                                                    </svg>
+                                                    ${dateStr}
+                                                </span>
+                                                ` : ''}
+                                            `;
+                                            
+                                            postCard.appendChild(metaDiv);
+                                            postsGrid.appendChild(postCard);
+                                        });
+                                        
+                                        postsContainer.appendChild(postsGrid);
+                                        responseContent.appendChild(postsContainer);
+                                    }
+                                    
+                                } catch (error) {
+                                    // Show error message
+                                    loadingIndicator.classList.add('hidden');
+                                    responseContent.classList.remove('hidden');
+                                    responseContent.innerHTML = `
+                                        <div class="text-red-500">
+                                            <svg class="inline-block h-5 w-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                                            </svg>
+                                            ${error.message}
+                                        </div>
+                                    `;
+                                }
+                                
+                                // Scroll to bottom
+                                const messageContainer = document.getElementById('messageContainer');
+                                messageContainer.scrollTop = messageContainer.scrollHeight;
+                            }
+                        }
+                    };
+                }
+            </script>
+        </body>
+    </html>
+    

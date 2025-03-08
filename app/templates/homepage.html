@@ -1,0 +1,227 @@
+<!-- Theme toggle button -->
+<button class="theme-toggle" id="themeToggle">
+    <svg class="icon-sun h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <!-- Sun icon with more detail and style -->
+        <circle cx="12" cy="12" r="4" stroke-width="2"></circle>
+        <!-- Core rays - longer and with rounded caps -->
+        <line x1="12" y1="1" x2="12" y2="4" stroke-width="2" stroke-linecap="round"></line>
+        <line x1="12" y1="20" x2="12" y2="23" stroke-width="2" stroke-linecap="round"></line>
+        <line x1="1" y1="12" x2="4" y2="12" stroke-width="2" stroke-linecap="round"></line>
+        <line x1="20" y1="12" x2="23" y2="12" stroke-width="2" stroke-linecap="round"></line>
+        <!-- Diagonal rays with rounded caps -->
+        <line x1="4" y1="4" x2="6.5" y2="6.5" stroke-width="2" stroke-linecap="round"></line>
+        <line x1="17.5" y1="17.5" x2="20" y2="20" stroke-width="2" stroke-linecap="round"></line>
+        <line x1="4" y1="20" x2="6.5" y2="17.5" stroke-width="2" stroke-linecap="round"></line>
+        <line x1="17.5" y1="6.5" x2="20" y2="4" stroke-width="2" stroke-linecap="round"></line>
+    </svg>
+    <svg class="icon-moon h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <!-- More stylized moon with smooth, elegant path -->
+        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+    </svg>
+</button>
+
+<!-- Settings gear button -->
+<button class="settings-button" id="settingsButton">
+    <svg class="icon-gear" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <!-- Gear icon with smooth details -->
+        <circle cx="12" cy="12" r="3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></circle>
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+    </svg>
+</button>
+
+<style>
+    :root {
+        --bg-primary: #0f0f0f;
+        --bg-secondary: #1a1a1a;
+        --bg-tertiary: #2a2a2a;
+        --text-primary: #ffffff;
+        --text-secondary: #a0a0a0;
+        --accent-primary: #5e17eb;
+        --accent-secondary: #7938ee;
+        --accent-tertiary: #9158f5;
+        --border-color: #333333;
+    }
+    
+    [data-theme="light"] {
+        --bg-primary: #f9fafb;
+        --bg-secondary: #ffffff;
+        --bg-tertiary: #f3f4f6;
+        --text-primary: #111827;
+        --text-secondary: #4b5563;
+        --accent-primary: #5e17eb;
+        --accent-secondary: #7938ee;
+        --accent-tertiary: #9158f5;
+        --border-color: #e5e7eb;
+    }
+    
+    /* Theme toggle animations */
+    .theme-toggle {
+        position: fixed;
+        top: 1rem;
+        right: 1rem;
+        padding: 0.5rem;
+        border-radius: 0.5rem;
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-color);
+        color: var(--text-primary);
+        cursor: pointer;
+        transition: all 0.3s ease;
+        z-index: 10;
+        overflow: hidden;
+    }
+    
+    /* Settings button styling */
+    .settings-button {
+        position: fixed;
+        top: 1rem;
+        right: 4rem; /* Position to the left of the theme toggle */
+        padding: 0.5rem;
+        border-radius: 0.5rem;
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-color);
+        color: var(--text-primary);
+        cursor: pointer;
+        transition: all 0.3s ease;
+        z-index: 10;
+    }
+    
+    .settings-button:hover {
+        background: var(--bg-tertiary);
+        transform: scale(1.05);
+    }
+    
+    .icon-gear {
+        animation: slowRotate 8s linear infinite;
+        width: 20px;
+        height: 20px;
+        display: block;
+    }
+    
+    .settings-button:hover .icon-gear {
+        animation-duration: 3s;
+        transform: scale(1.15);
+        color: var(--accent-secondary);
+    }
+    
+    .settings-button:active .icon-gear {
+        animation-duration: 1s;
+        transform: scale(0.95);
+    }
+    
+    .settings-clicked .icon-gear {
+        animation: fastRotate 1s cubic-bezier(0.68, -0.55, 0.27, 1.55) !important;
+        color: var(--accent-primary) !important;
+    }
+    
+    .settings-clicked {
+        animation: clickPulse 1s cubic-bezier(0.22, 0.61, 0.36, 1);
+    }
+    
+    .settings-clicked svg {
+        animation: fastRotate 1s cubic-bezier(0.68, -0.55, 0.27, 1.55) !important;
+        color: var(--accent-primary) !important;
+    }
+    
+    @keyframes pulse {
+        0% {
+            transform: scale(1);
+            box-shadow: 0 0 0 0 rgba(94, 23, 235, 0.4);
+        }
+        70% {
+            transform: scale(0.95);
+            box-shadow: 0 0 0 10px rgba(94, 23, 235, 0);
+        }
+        100% {
+            transform: scale(1);
+            box-shadow: 0 0 0 0 rgba(94, 23, 235, 0);
+        }
+    }
+    
+    @keyframes slowRotate {
+        0% {
+            transform: rotate(0deg);
+        }
+        100% {
+            transform: rotate(360deg);
+        }
+    }
+    
+    @keyframes clickPulse {
+        0% {
+            box-shadow: 0 0 0 0 rgba(94, 23, 235, 0.7);
+        }
+        50% {
+            box-shadow: 0 0 0 15px rgba(94, 23, 235, 0);
+        }
+        100% {
+            box-shadow: 0 0 0 0 rgba(94, 23, 235, 0);
+        }
+    }
+    
+    @keyframes fastRotate {
+        0% {
+            transform: rotate(0deg);
+        }
+        50% {
+            transform: rotate(180deg);
+        }
+        100% {
+            transform: rotate(360deg);
+        }
+    }
+    
+    .theme-toggle:hover {
+        background: var(--bg-tertiary);
+        transform: scale(1.05);
+    }
+    
+    .theme-toggle svg {
+        transition: all 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+    }
+    
+    .icon-sun {
+        opacity: 0;
+        transform: rotate(-90deg) scale(0);
+        position: absolute;
+    }
+    
+    .icon-moon {
+        opacity: 1;
+        transform: rotate(0) scale(1);
+    }
+    
+    [data-theme="light"] .icon-sun {
+        opacity: 1;
+        transform: rotate(0) scale(1);
+        position: static;
+    }
+    
+    [data-theme="light"] .icon-moon {
+        opacity: 0;
+        transform: rotate(90deg) scale(0);
+        position: absolute;
+    }
+    
+    /* Keep existing styles */
+    body {
+        font-family: 'Inter', sans-serif;
+    }
+</style>
+
+<script>
+    // Add event listener for settings button
+    document.getElementById('settingsButton').addEventListener('click', function() {
+        // Add clicked class for enhanced animation
+        this.classList.add('settings-clicked');
+        
+        // Remove the class after animation completes
+        setTimeout(() => {
+            this.classList.remove('settings-clicked');
+        }, 1000);
+        
+        // Your settings functionality here
+        console.log('Settings button clicked');
+        // For demonstration, we'll just show an alert
+        alert('Settings functionality will be implemented here!');
+    });
+</script> 
